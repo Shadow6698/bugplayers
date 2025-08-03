@@ -1,4 +1,4 @@
--- Bug Player GUI System (Local Target Version)
+-- Bug Player GUI System (TextBox Version)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -7,9 +7,10 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Variáveis do sistema
-local selectedPlayers = {}
+local textBoxes = {}
 local bugPlayerActive = false
 local bugConnection = nil
+local textBoxCount = 0
 
 -- Criar ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
@@ -24,7 +25,7 @@ MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.1, 0, 0.1, 0)
-MainFrame.Size = UDim2.new(0, 320, 0, 450)
+MainFrame.Size = UDim2.new(0, 350, 0, 500)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
@@ -82,7 +83,7 @@ StatusFrame.Parent = MainFrame
 StatusFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 StatusFrame.BorderSizePixel = 0
 StatusFrame.Position = UDim2.new(0, 10, 0, 60)
-StatusFrame.Size = UDim2.new(1, -20, 0, 100)
+StatusFrame.Size = UDim2.new(1, -20, 0, 80)
 
 local StatusCorner = Instance.new("UICorner")
 StatusCorner.CornerRadius = UDim.new(0, 8)
@@ -101,65 +102,67 @@ StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 StatusLabel.TextScaled = true
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Selected Count Label
-local SelectedLabel = Instance.new("TextLabel")
-SelectedLabel.Name = "SelectedLabel"
-SelectedLabel.Parent = StatusFrame
-SelectedLabel.BackgroundTransparency = 1
-SelectedLabel.Position = UDim2.new(0, 10, 0, 40)
-SelectedLabel.Size = UDim2.new(1, -20, 0, 25)
-SelectedLabel.Font = Enum.Font.Gotham
-SelectedLabel.Text = "Players Selecionados: 0"
-SelectedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-SelectedLabel.TextScaled = true
-SelectedLabel.TextXAlignment = Enum.TextXAlignment.Left
-
 -- Info Label
 local InfoLabel = Instance.new("TextLabel")
 InfoLabel.Name = "InfoLabel"
 InfoLabel.Parent = StatusFrame
 InfoLabel.BackgroundTransparency = 1
-InfoLabel.Position = UDim2.new(0, 10, 0, 70)
+InfoLabel.Position = UDim2.new(0, 10, 0, 40)
 InfoLabel.Size = UDim2.new(1, -20, 0, 25)
 InfoLabel.Font = Enum.Font.Gotham
-InfoLabel.Text = "💡 Clique nos nicks para selecionar/deselecionar players"
+InfoLabel.Text = "💡 Digite nicks parciais ou completos dos players"
 InfoLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
 InfoLabel.TextScaled = true
 InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Botões de controle
-local ControlFrame = Instance.new("Frame")
-ControlFrame.Name = "ControlFrame"
-ControlFrame.Parent = MainFrame
-ControlFrame.BackgroundTransparency = 1
-ControlFrame.Position = UDim2.new(0, 10, 0, 170)
-ControlFrame.Size = UDim2.new(1, -20, 0, 60)
+-- Botão adicionar TextBox
+local AddButton = Instance.new("TextButton")
+AddButton.Name = "AddButton"
+AddButton.Parent = MainFrame
+AddButton.BackgroundColor3 = Color3.fromRGB(85, 255, 85)
+AddButton.BorderSizePixel = 0
+AddButton.Position = UDim2.new(0, 10, 0, 150)
+AddButton.Size = UDim2.new(1, -20, 0, 40)
+AddButton.Font = Enum.Font.GothamBold
+AddButton.Text = "➕ Adicionar Player"
+AddButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AddButton.TextScaled = true
 
--- Botão atualizar
-local RefreshButton = Instance.new("TextButton")
-RefreshButton.Name = "RefreshButton"
-RefreshButton.Parent = ControlFrame
-RefreshButton.BackgroundColor3 = Color3.fromRGB(85, 170, 255)
-RefreshButton.BorderSizePixel = 0
-RefreshButton.Position = UDim2.new(0, 0, 0, 0)
-RefreshButton.Size = UDim2.new(0.48, 0, 1, 0)
-RefreshButton.Font = Enum.Font.GothamBold
-RefreshButton.Text = "🔄 Atualizar"
-RefreshButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-RefreshButton.TextScaled = true
+local AddCorner = Instance.new("UICorner")
+AddCorner.CornerRadius = UDim.new(0, 8)
+AddCorner.Parent = AddButton
 
-local RefreshCorner = Instance.new("UICorner")
-RefreshCorner.CornerRadius = UDim.new(0, 8)
-RefreshCorner.Parent = RefreshButton
+-- ScrollFrame para TextBoxes
+local TextBoxScrollFrame = Instance.new("ScrollingFrame")
+TextBoxScrollFrame.Name = "TextBoxScrollFrame"
+TextBoxScrollFrame.Parent = MainFrame
+TextBoxScrollFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TextBoxScrollFrame.BorderSizePixel = 0
+TextBoxScrollFrame.Position = UDim2.new(0, 10, 0, 200)
+TextBoxScrollFrame.Size = UDim2.new(1, -20, 1, -310)
+TextBoxScrollFrame.ScrollBarThickness = 6
+TextBoxScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(85, 170, 255)
+TextBoxScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 
--- Botão bug player
+local ScrollCorner = Instance.new("UICorner")
+ScrollCorner.CornerRadius = UDim.new(0, 8)
+ScrollCorner.Parent = TextBoxScrollFrame
+
+-- Layout para TextBoxes
+local ListLayout = Instance.new("UIListLayout")
+ListLayout.Parent = TextBoxScrollFrame
+ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ListLayout.Padding = UDim.new(0, 5)
+ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- Botão Ativar/Desativar Bug
 local BugButton = Instance.new("TextButton")
 BugButton.Name = "BugButton"
-BugButton.Parent = ControlFrame
+BugButton.Parent = MainFrame
 BugButton.BackgroundColor3 = Color3.fromRGB(85, 255, 85)
 BugButton.BorderSizePixel = 0
-BugButton.Position = UDim2.new(0.52, 0, 0, 0)
-BugButton.Size = UDim2.new(0.48, 0, 1, 0)
+BugButton.Position = UDim2.new(0, 10, 1, -50)
+BugButton.Size = UDim2.new(1, -20, 0, 40)
 BugButton.Font = Enum.Font.GothamBold
 BugButton.Text = "🟢 Ativar Bug"
 BugButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -168,27 +171,6 @@ BugButton.TextScaled = true
 local BugCorner = Instance.new("UICorner")
 BugCorner.CornerRadius = UDim.new(0, 8)
 BugCorner.Parent = BugButton
-
--- ScrollFrame para lista de players
-local PlayerScrollFrame = Instance.new("ScrollingFrame")
-PlayerScrollFrame.Name = "PlayerScrollFrame"
-PlayerScrollFrame.Parent = MainFrame
-PlayerScrollFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-PlayerScrollFrame.BorderSizePixel = 0
-PlayerScrollFrame.Position = UDim2.new(0, 10, 0, 240)
-PlayerScrollFrame.Size = UDim2.new(1, -20, 1, -250)
-PlayerScrollFrame.ScrollBarThickness = 6
-PlayerScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(85, 170, 255)
-
-local ScrollCorner = Instance.new("UICorner")
-ScrollCorner.CornerRadius = UDim.new(0, 8)
-ScrollCorner.Parent = PlayerScrollFrame
-
--- Layout para lista de players
-local ListLayout = Instance.new("UIListLayout")
-ListLayout.Parent = PlayerScrollFrame
-ListLayout.SortOrder = Enum.SortOrder.Name
-ListLayout.Padding = UDim.new(0, 5)
 
 -- Função para criar notificação
 local function createNotification(title, message, color)
@@ -242,6 +224,136 @@ local function createNotification(title, message, color)
     slideOut:Play()
 end
 
+-- Função para encontrar player por nick parcial
+local function findPlayerByPartialName(partialName)
+    if partialName == "" then return nil end
+    
+    partialName = partialName:lower()
+    
+    -- Primeiro, procura por match exato
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Name:lower() == partialName then
+            return player
+        end
+    end
+    
+    -- Depois, procura por match parcial
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Name:lower():find(partialName, 1, true) then
+            return player
+        end
+    end
+    
+    return nil
+end
+
+-- Função para atualizar canvas size
+local function updateCanvasSize()
+    local contentHeight = ListLayout.AbsoluteContentSize.Y
+    TextBoxScrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight + 10)
+end
+
+-- Função para remover TextBox
+local function removeTextBox(textBoxFrame)
+    local textBoxId = textBoxFrame.Name:gsub("TextBoxFrame", "")
+    textBoxes[tonumber(textBoxId)] = nil
+    textBoxFrame:Destroy()
+    updateCanvasSize()
+    createNotification("🗑️ Player Removido", "TextBox removida com sucesso!", Color3.fromRGB(255, 170, 85))
+end
+
+-- Função para criar TextBox
+local function createTextBox()
+    textBoxCount = textBoxCount + 1
+    local textBoxId = textBoxCount
+    
+    local TextBoxFrame = Instance.new("Frame")
+    TextBoxFrame.Name = "TextBoxFrame" .. textBoxId
+    TextBoxFrame.Parent = TextBoxScrollFrame
+    TextBoxFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    TextBoxFrame.BorderSizePixel = 0
+    TextBoxFrame.Size = UDim2.new(1, -10, 0, 40)
+    TextBoxFrame.LayoutOrder = textBoxId
+    
+    local TextBoxCorner = Instance.new("UICorner")
+    TextBoxCorner.CornerRadius = UDim.new(0, 6)
+    TextBoxCorner.Parent = TextBoxFrame
+    
+    -- TextBox para nick
+    local PlayerTextBox = Instance.new("TextBox")
+    PlayerTextBox.Name = "PlayerTextBox"
+    PlayerTextBox.Parent = TextBoxFrame
+    PlayerTextBox.BackgroundTransparency = 1
+    PlayerTextBox.Position = UDim2.new(0, 10, 0, 0)
+    PlayerTextBox.Size = UDim2.new(1, -50, 1, 0)
+    PlayerTextBox.Font = Enum.Font.Gotham
+    PlayerTextBox.PlaceholderText = "Digite o nick do player..."
+    PlayerTextBox.Text = ""
+    PlayerTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    PlayerTextBox.TextScaled = true
+    PlayerTextBox.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Botão remover
+    local RemoveButton = Instance.new("TextButton")
+    RemoveButton.Name = "RemoveButton"
+    RemoveButton.Parent = TextBoxFrame
+    RemoveButton.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
+    RemoveButton.BorderSizePixel = 0
+    RemoveButton.Position = UDim2.new(1, -35, 0, 5)
+    RemoveButton.Size = UDim2.new(0, 30, 0, 30)
+    RemoveButton.Font = Enum.Font.GothamBold
+    RemoveButton.Text = "➖"
+    RemoveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    RemoveButton.TextScaled = true
+    
+    local RemoveCorner = Instance.new("UICorner")
+    RemoveCorner.CornerRadius = UDim.new(0, 4)
+    RemoveCorner.Parent = RemoveButton
+    
+    -- Conectar evento de remoção
+    RemoveButton.MouseButton1Click:Connect(function()
+        removeTextBox(TextBoxFrame)
+    end)
+    
+    -- Efeito visual para mudança de cor baseada na validade do nick
+    PlayerTextBox.Changed:Connect(function()
+        local player = findPlayerByPartialName(PlayerTextBox.Text)
+        if PlayerTextBox.Text == "" then
+            TextBoxFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        elseif player then
+            TextBoxFrame.BackgroundColor3 = Color3.fromRGB(85, 255, 85)
+            PlayerTextBox.PlaceholderText = "✅ Player encontrado: " .. player.Name
+        else
+            TextBoxFrame.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
+            PlayerTextBox.PlaceholderText = "❌ Player não encontrado"
+        end
+    end)
+    
+    textBoxes[textBoxId] = {
+        frame = TextBoxFrame,
+        textBox = PlayerTextBox
+    }
+    
+    updateCanvasSize()
+    createNotification("➕ TextBox Adicionada", "Nova textbox criada! Digite o nick do player.", Color3.fromRGB(85, 255, 85))
+end
+
+-- Função para obter players válidos das TextBoxes
+local function getValidPlayers()
+    local validPlayers = {}
+    
+    for _, textBoxData in pairs(textBoxes) do
+        if textBoxData and textBoxData.textBox then
+            local player = findPlayerByPartialName(textBoxData.textBox.Text)
+            if player and player ~= LocalPlayer then
+                table.insert(validPlayers, player)
+            end
+        end
+    end
+    
+    return validPlayers
+end
+
 -- Função para alternar bug player
 local function toggleBugPlayer()
     if bugPlayerActive then
@@ -256,9 +368,10 @@ local function toggleBugPlayer()
         BugButton.BackgroundColor3 = Color3.fromRGB(85, 255, 85)
         createNotification("🐛 Bug Desativado", "O bug foi desativado para todos os players.", Color3.fromRGB(255, 85, 85))
     else
-        -- Verificar se há players selecionados
-        if next(selectedPlayers) == nil then
-            createNotification("❌ Erro", "Selecione pelo menos um player antes de ativar o bug.", Color3.fromRGB(255, 85, 85))
+        local validPlayers = getValidPlayers()
+        
+        if #validPlayers == 0 then
+            createNotification("❌ Erro", "Nenhum player válido encontrado nas textboxes.", Color3.fromRGB(255, 85, 85))
             return
         end
         
@@ -278,31 +391,16 @@ local function toggleBugPlayer()
             return
         end
         
-        local selectedPlayersList = {}
-        for playerName, _ in pairs(selectedPlayers) do
-            local player = Players:FindFirstChild(playerName)
-            if player then
-                table.insert(selectedPlayersList, player)
-            end
-        end
-        
-        if #selectedPlayersList == 0 then
-            createNotification("❌ Erro", "Nenhum dos players selecionados está no servidor.", Color3.fromRGB(255, 85, 85))
-            bugPlayerActive = false
-            StatusLabel.Text = "Status: ⚫ Bug Inativo"
-            BugButton.Text = "🟢 Ativar Bug"
-            BugButton.BackgroundColor3 = Color3.fromRGB(85, 255, 85)
-            return
-        end
-        
         local index = 1
         bugConnection = RunService.Stepped:Connect(function()
             if not bugPlayerActive then return end
-            if #selectedPlayersList < 1 then return end
+            
+            local currentValidPlayers = getValidPlayers()
+            if #currentValidPlayers < 1 then return end
             
             index = index + 1
-            if index > #selectedPlayersList then index = 1 end
-            local target = selectedPlayersList[index]
+            if index > #currentValidPlayers then index = 1 end
+            local target = currentValidPlayers[index]
             
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                 local crazyVector = Vector3.new(
@@ -335,92 +433,12 @@ local function toggleBugPlayer()
             end
         end)
         
-        createNotification("🐛 Bug Ativado", "Bug ativado para " .. #selectedPlayersList .. " player(s) selecionado(s).", Color3.fromRGB(85, 255, 85))
-    end
-end
-
--- Função para atualizar lista de players
-local function updatePlayerList()
-    -- Limpar lista atual
-    for _, child in pairs(PlayerScrollFrame:GetChildren()) do
-        if child:IsA("TextButton") then
-            child:Destroy()
-        end
-    end
-    
-    -- Atualizar contador
-    local selectedCount = 0
-    for _ in pairs(selectedPlayers) do
-        selectedCount = selectedCount + 1
-    end
-    SelectedLabel.Text = "Players Selecionados: " .. selectedCount
-    
-    -- Adicionar players à lista
-    local players = Players:GetPlayers()
-    local yPosition = 0
-    
-    for i, player in pairs(players) do
-        if player ~= LocalPlayer then
-            local isSelected = selectedPlayers[player.Name] ~= nil
-            
-            local PlayerButton = Instance.new("TextButton")
-            PlayerButton.Name = player.Name
-            PlayerButton.Parent = PlayerScrollFrame
-            PlayerButton.BackgroundColor3 = isSelected and Color3.fromRGB(85, 255, 85) or Color3.fromRGB(45, 45, 45)
-            PlayerButton.BorderSizePixel = 0
-            PlayerButton.Position = UDim2.new(0, 5, 0, yPosition)
-            PlayerButton.Size = UDim2.new(1, -10, 0, 35)
-            PlayerButton.Font = Enum.Font.Gotham
-            PlayerButton.Text = (isSelected and "✅ " or "⭕ ") .. player.Name
-            PlayerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-            PlayerButton.TextScaled = true
-            PlayerButton.TextXAlignment = Enum.TextXAlignment.Left
-            
-            local PlayerCorner = Instance.new("UICorner")
-            PlayerCorner.CornerRadius = UDim.new(0, 6)
-            PlayerCorner.Parent = PlayerButton
-            
-            -- Padding interno
-            local PlayerPadding = Instance.new("UIPadding")
-            PlayerPadding.PaddingLeft = UDim.new(0, 10)
-            PlayerPadding.Parent = PlayerButton
-            
-            PlayerButton.MouseButton1Click:Connect(function()
-                if selectedPlayers[player.Name] then
-                    selectedPlayers[player.Name] = nil
-                    createNotification("🐛 Player Desmarcado", player.Name .. " foi removido da seleção.", Color3.fromRGB(255, 170, 85))
-                else
-                    selectedPlayers[player.Name] = true
-                    createNotification("🐛 Player Selecionado", player.Name .. " foi adicionado à seleção.", Color3.fromRGB(85, 255, 85))
-                end
-                updatePlayerList()
-            end)
-            
-            yPosition = yPosition + 40
-        end
-    end
-    
-    -- Atualizar tamanho do canvas
-    PlayerScrollFrame.CanvasSize = UDim2.new(0, 0, 0, yPosition)
-    
-    if #players <= 1 then
-        local NoPlayersLabel = Instance.new("TextLabel")
-        NoPlayersLabel.Parent = PlayerScrollFrame
-        NoPlayersLabel.BackgroundTransparency = 1
-        NoPlayersLabel.Size = UDim2.new(1, 0, 1, 0)
-        NoPlayersLabel.Font = Enum.Font.Gotham
-        NoPlayersLabel.Text = "Nenhum outro player no servidor"
-        NoPlayersLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-        NoPlayersLabel.TextScaled = true
+        createNotification("🐛 Bug Ativado", "Bug ativado para " .. #validPlayers .. " player(s) válido(s).", Color3.fromRGB(85, 255, 85))
     end
 end
 
 -- Conectar eventos
-RefreshButton.MouseButton1Click:Connect(function()
-    updatePlayerList()
-    createNotification("🔄 Lista Atualizada", "Lista de players foi atualizada!", Color3.fromRGB(85, 170, 255))
-end)
-
+AddButton.MouseButton1Click:Connect(createTextBox)
 BugButton.MouseButton1Click:Connect(toggleBugPlayer)
 
 CloseButton.MouseButton1Click:Connect(function()
@@ -444,15 +462,20 @@ local function addButtonEffects(button)
     end)
 end
 
-addButtonEffects(RefreshButton)
+addButtonEffects(AddButton)
 addButtonEffects(BugButton)
 addButtonEffects(CloseButton)
+
+-- Atualizar layout quando conteúdo mudar
+ListLayout.Changed:Connect(function()
+    updateCanvasSize()
+end)
 
 -- Animação de entrada da GUI
 MainFrame.Position = UDim2.new(0.1, 0, -1, 0)
 local slideIn = TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Back), {Position = UDim2.new(0.1, 0, 0.1, 0)})
 slideIn:Play()
 
--- Inicializar
-updatePlayerList()
-createNotification("🐛 Bug Player GUI", "Sistema carregado com sucesso! Clique nos nicks para selecionar players.", Color3.fromRGB(85, 170, 255))
+-- Inicializar com uma TextBox
+createTextBox()
+createNotification("🐛 Bug Player GUI", "Sistema carregado! Use ➕ para adicionar players e ➖ para remover.", Color3.fromRGB(85, 170, 255))
