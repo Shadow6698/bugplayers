@@ -1,4 +1,4 @@
--- Bug Player GUI System com Sistema de Prisão/Cadeia (Local Target Version)
+-- Bug Player GUI System com FlingBall (Local Target Version)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -8,11 +8,10 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Variáveis do sistema
 local selectedPlayers = {}
-local prisonedPlayers = {} -- Players na prisão
 local bugPlayerActive = false
-local prisonActive = false
+local flingBallActive = false
 local bugConnection = nil
-local prisonConnections = {} -- Conexões da prisão
+local flingBallConnections = {}
 
 -- Criar ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
@@ -27,7 +26,7 @@ MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.1, 0, 0.1, 0)
-MainFrame.Size = UDim2.new(0, 320, 0, 550)
+MainFrame.Size = UDim2.new(0, 320, 0, 500)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
@@ -56,7 +55,7 @@ Title.BackgroundTransparency = 1
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.Size = UDim2.new(1, -60, 1, 0)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "🐛 Bug System + ⛓️ Prisão"
+Title.Text = "🐛 Bug System + ⚽ FlingBall"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextScaled = true
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -85,7 +84,7 @@ StatusFrame.Parent = MainFrame
 StatusFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 StatusFrame.BorderSizePixel = 0
 StatusFrame.Position = UDim2.new(0, 10, 0, 60)
-StatusFrame.Size = UDim2.new(1, -20, 0, 130)
+StatusFrame.Size = UDim2.new(1, -20, 0, 120)
 
 local StatusCorner = Instance.new("UICorner")
 StatusCorner.CornerRadius = UDim.new(0, 8)
@@ -104,18 +103,18 @@ BugStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 BugStatusLabel.TextScaled = true
 BugStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Status Label Prisão
-local PrisonStatusLabel = Instance.new("TextLabel")
-PrisonStatusLabel.Name = "PrisonStatusLabel"
-PrisonStatusLabel.Parent = StatusFrame
-PrisonStatusLabel.BackgroundTransparency = 1
-PrisonStatusLabel.Position = UDim2.new(0, 10, 0, 35)
-PrisonStatusLabel.Size = UDim2.new(1, -20, 0, 20)
-PrisonStatusLabel.Font = Enum.Font.Gotham
-PrisonStatusLabel.Text = "Prisão Status: 🔓 Liberada"
-PrisonStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-PrisonStatusLabel.TextScaled = true
-PrisonStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+-- Status Label FlingBall
+local FlingBallStatusLabel = Instance.new("TextLabel")
+FlingBallStatusLabel.Name = "FlingBallStatusLabel"
+FlingBallStatusLabel.Parent = StatusFrame
+FlingBallStatusLabel.BackgroundTransparency = 1
+FlingBallStatusLabel.Position = UDim2.new(0, 10, 0, 35)
+FlingBallStatusLabel.Size = UDim2.new(1, -20, 0, 20)
+FlingBallStatusLabel.Font = Enum.Font.Gotham
+FlingBallStatusLabel.Text = "FlingBall Status: ⚫ Inativo"
+FlingBallStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlingBallStatusLabel.TextScaled = true
+FlingBallStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 -- Selected Count Label
 local SelectedLabel = Instance.new("TextLabel")
@@ -130,25 +129,12 @@ SelectedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 SelectedLabel.TextScaled = true
 SelectedLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Prisioned Count Label
-local PrisionedLabel = Instance.new("TextLabel")
-PrisionedLabel.Name = "PrisionedLabel"
-PrisionedLabel.Parent = StatusFrame
-PrisionedLabel.BackgroundTransparency = 1
-PrisionedLabel.Position = UDim2.new(0, 10, 0, 85)
-PrisionedLabel.Size = UDim2.new(1, -20, 0, 20)
-PrisionedLabel.Font = Enum.Font.Gotham
-PrisionedLabel.Text = "Players Presos: 0"
-PrisionedLabel.TextColor3 = Color3.fromRGB(255, 170, 85)
-PrisionedLabel.TextScaled = true
-PrisionedLabel.TextXAlignment = Enum.TextXAlignment.Left
-
 -- Info Label
 local InfoLabel = Instance.new("TextLabel")
 InfoLabel.Name = "InfoLabel"
 InfoLabel.Parent = StatusFrame
 InfoLabel.BackgroundTransparency = 1
-InfoLabel.Position = UDim2.new(0, 10, 0, 110)
+InfoLabel.Position = UDim2.new(0, 10, 0, 80)
 InfoLabel.Size = UDim2.new(1, -20, 0, 15)
 InfoLabel.Font = Enum.Font.Gotham
 InfoLabel.Text = "💡 Clique nos nicks para selecionar players"
@@ -161,7 +147,7 @@ local ControlFrame1 = Instance.new("Frame")
 ControlFrame1.Name = "ControlFrame1"
 ControlFrame1.Parent = MainFrame
 ControlFrame1.BackgroundTransparency = 1
-ControlFrame1.Position = UDim2.new(0, 10, 0, 200)
+ControlFrame1.Position = UDim2.new(0, 10, 0, 190)
 ControlFrame1.Size = UDim2.new(1, -20, 0, 50)
 
 -- Botão atualizar
@@ -198,47 +184,30 @@ local BugCorner = Instance.new("UICorner")
 BugCorner.CornerRadius = UDim.new(0, 8)
 BugCorner.Parent = BugButton
 
--- Botões de controle - Linha 2 (Prisão)
+-- Botões de controle - Linha 2 (FlingBall)
 local ControlFrame2 = Instance.new("Frame")
 ControlFrame2.Name = "ControlFrame2"
 ControlFrame2.Parent = MainFrame
 ControlFrame2.BackgroundTransparency = 1
-ControlFrame2.Position = UDim2.new(0, 10, 0, 260)
+ControlFrame2.Position = UDim2.new(0, 10, 0, 250)
 ControlFrame2.Size = UDim2.new(1, -20, 0, 50)
 
--- Botão prender
-local PrisonButton = Instance.new("TextButton")
-PrisonButton.Name = "PrisonButton"
-PrisonButton.Parent = ControlFrame2
-PrisonButton.BackgroundColor3 = Color3.fromRGB(255, 170, 85)
-PrisonButton.BorderSizePixel = 0
-PrisonButton.Position = UDim2.new(0, 0, 0, 0)
-PrisonButton.Size = UDim2.new(0.48, 0, 1, 0)
-PrisonButton.Font = Enum.Font.GothamBold
-PrisonButton.Text = "⛓️ Prender"
-PrisonButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-PrisonButton.TextScaled = true
+-- Botão FlingBall
+local FlingBallButton = Instance.new("TextButton")
+FlingBallButton.Name = "FlingBallButton"
+FlingBallButton.Parent = ControlFrame2
+FlingBallButton.BackgroundColor3 = Color3.fromRGB(255, 170, 85)
+FlingBallButton.BorderSizePixel = 0
+FlingBallButton.Position = UDim2.new(0, 0, 0, 0)
+FlingBallButton.Size = UDim2.new(1, 0, 1, 0)
+FlingBallButton.Font = Enum.Font.GothamBold
+FlingBallButton.Text = "🟢 Ativar FlingBall"
+FlingBallButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlingBallButton.TextScaled = true
 
-local PrisonCorner = Instance.new("UICorner")
-PrisonCorner.CornerRadius = UDim.new(0, 8)
-PrisonCorner.Parent = PrisonButton
-
--- Botão libertar
-local FreeButton = Instance.new("TextButton")
-FreeButton.Name = "FreeButton"
-FreeButton.Parent = ControlFrame2
-FreeButton.BackgroundColor3 = Color3.fromRGB(85, 255, 170)
-FreeButton.BorderSizePixel = 0
-FreeButton.Position = UDim2.new(0.52, 0, 0, 0)
-FreeButton.Size = UDim2.new(0.48, 0, 1, 0)
-FreeButton.Font = Enum.Font.GothamBold
-FreeButton.Text = "🔓 Libertar Todos"
-FreeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-FreeButton.TextScaled = true
-
-local FreeCorner = Instance.new("UICorner")
-FreeCorner.CornerRadius = UDim.new(0, 8)
-FreeCorner.Parent = FreeButton
+local FlingBallCorner = Instance.new("UICorner")
+FlingBallCorner.CornerRadius = UDim.new(0, 8)
+FlingBallCorner.Parent = FlingBallButton
 
 -- ScrollFrame para lista de players
 local PlayerScrollFrame = Instance.new("ScrollingFrame")
@@ -246,8 +215,8 @@ PlayerScrollFrame.Name = "PlayerScrollFrame"
 PlayerScrollFrame.Parent = MainFrame
 PlayerScrollFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 PlayerScrollFrame.BorderSizePixel = 0
-PlayerScrollFrame.Position = UDim2.new(0, 10, 0, 320)
-PlayerScrollFrame.Size = UDim2.new(1, -20, 1, -330)
+PlayerScrollFrame.Position = UDim2.new(0, 10, 0, 310)
+PlayerScrollFrame.Size = UDim2.new(1, -20, 1, -320)
 PlayerScrollFrame.ScrollBarThickness = 6
 PlayerScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(85, 170, 255)
 
@@ -313,85 +282,135 @@ local function createNotification(title, message, color)
     slideOut:Play()
 end
 
--- Função para prender players (impede movimento)
-local function prisonPlayers()
-    if next(selectedPlayers) == nil then
-        createNotification("❌ Erro", "Selecione pelo menos um player para prender.", Color3.fromRGB(255, 85, 85))
-        return
+-- Função FlingBall
+local function FlingBall(target)
+    local players = game:GetService("Players")
+    local player = players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    local hrp = character:WaitForChild("HumanoidRootPart")
+    local backpack = player:WaitForChild("Backpack")
+    local ServerBalls = workspace.WorkspaceCom:WaitForChild("001_SoccerBalls")
+
+    local function GetBall()
+        if not backpack:FindFirstChild("SoccerBall") then
+            game:GetService("ReplicatedStorage").RE:FindFirstChild("1Too1l"):InvokeServer("PickingTools", "SoccerBall")
+        end
+        repeat task.wait() until backpack:FindFirstChild("SoccerBall")
+        backpack.SoccerBall.Parent = character
+        repeat task.wait() until ServerBalls:FindFirstChild("Soccer" .. player.Name)
+        character.SoccerBall.Parent = backpack
+        return ServerBalls:FindFirstChild("Soccer" .. player.Name)
     end
-    
-    local prisonedCount = 0
-    
-    for playerName, _ in pairs(selectedPlayers) do
-        local player = Players:FindFirstChild(playerName)
-        if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            if not prisonedPlayers[playerName] then
-                prisonedPlayers[playerName] = {
-                    player = player,
-                    originalPosition = player.Character.HumanoidRootPart.Position,
-                    connection = nil
-                }
-                
-                -- Criar conexão que mantém o player na posição original
-                prisonedPlayers[playerName].connection = RunService.Heartbeat:Connect(function()
-                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        -- Impede movimento mantendo posição fixa
-                        player.Character.HumanoidRootPart.CFrame = CFrame.new(prisonedPlayers[playerName].originalPosition)
-                        player.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
-                        player.Character.HumanoidRootPart.AngularVelocity = Vector3.new(0, 0, 0)
-                        
-                        -- Desativar controles do player
-                        if player.Character:FindFirstChild("Humanoid") then
-                            player.Character.Humanoid.PlatformStand = true
-                            player.Character.Humanoid.WalkSpeed = 0
-                            player.Character.Humanoid.JumpPower = 0
+
+    local Ball = ServerBalls:FindFirstChild("Soccer" .. player.Name) or GetBall()
+    Ball.CanCollide = false
+    Ball.Massless = true
+    Ball.CustomPhysicalProperties = PhysicalProperties.new(0.0001, 0, 0)
+
+    if target ~= player then
+        local tchar = target.Character
+        if tchar and tchar:FindFirstChild("HumanoidRootPart") and tchar:FindFirstChild("Humanoid") then
+            local troot = tchar.HumanoidRootPart
+            local thum = tchar.Humanoid
+
+            if Ball:FindFirstChildWhichIsA("BodyVelocity") then
+                Ball:FindFirstChildWhichIsA("BodyVelocity"):Destroy()
+            end
+
+            local bv = Instance.new("BodyVelocity")
+            bv.Name = "FlingPower"
+            bv.Velocity = Vector3.new(9e8, 9e8, 9e8)
+            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bv.P = 9e900
+            bv.Parent = Ball
+
+            workspace.CurrentCamera.CameraSubject = thum
+            local StartTime = os.time()
+            repeat
+                if troot.Velocity.Magnitude > 0 then
+                    -- Cálculo da posição ajustada com base na velocidade do alvo
+                    local pos_x = troot.Position.X + (troot.Velocity.X / 1.5)
+                    local pos_y = troot.Position.Y + (troot.Velocity.Y / 1.5)
+                    local pos_z = troot.Position.Z + (troot.Velocity.Z / 1.5)
+
+                    -- Posiciona a bola diretamente na posição ajustada
+                    local position = Vector3.new(pos_x, pos_y, pos_z)
+                    Ball.CFrame = CFrame.new(position)
+                    Ball.Orientation += Vector3.new(45, 60, 30)
+                else
+                    for i, v in pairs(tchar:GetChildren()) do
+                        if v:IsA("BasePart") and v.CanCollide and not v.Anchored then
+                            Ball.CFrame = v.CFrame
+                            task.wait(1/6000)
                         end
                     end
-                end)
-                
-                prisonedCount = prisonedCount + 1
-            end
+                end
+                task.wait(1/6000)
+            until troot.Velocity.Magnitude > 1000 or thum.Health <= 0 or not tchar:IsDescendantOf(workspace) or target.Parent ~= players
+            workspace.CurrentCamera.CameraSubject = humanoid
         end
-    end
-    
-    if prisonedCount > 0 then
-        prisonActive = true
-        PrisonStatusLabel.Text = "Prisão Status: 🔒 Ativa (" .. prisonedCount .. " presos)"
-        createNotification("⛓️ Players Presos", prisonedCount .. " player(s) foram presos e não podem se mover!", Color3.fromRGB(255, 170, 85))
-        updatePlayerList()
-    else
-        createNotification("❌ Erro", "Nenhum player válido foi encontrado para prender.", Color3.fromRGB(255, 85, 85))
     end
 end
 
--- Função para libertar todos os players
-local function freeAllPlayers()
-    local freedCount = 0
-    
-    for playerName, prisonData in pairs(prisonedPlayers) do
-        if prisonData.connection then
-            prisonData.connection:Disconnect()
+-- Função para alternar FlingBall
+local function toggleFlingBall()
+    if flingBallActive then
+        -- Desativar FlingBall
+        for playerName, connectionData in pairs(flingBallConnections) do
+            if connectionData.connection then
+                connectionData.connection:Disconnect()
+            end
         end
-        
-        -- Restaurar controles do player
-        if prisonData.player and prisonData.player.Character and prisonData.player.Character:FindFirstChild("Humanoid") then
-            prisonData.player.Character.Humanoid.PlatformStand = false
-            prisonData.player.Character.Humanoid.WalkSpeed = 16
-            prisonData.player.Character.Humanoid.JumpPower = 50
-        end
-        
-        freedCount = freedCount + 1
-    end
-    
-    prisonedPlayers = {}
-    prisonActive = false
-    PrisonStatusLabel.Text = "Prisão Status: 🔓 Liberada"
-    
-    if freedCount > 0 then
-        createNotification("🔓 Players Libertos", freedCount .. " player(s) foram libertados da prisão!", Color3.fromRGB(85, 255, 170))
-        updatePlayerList()
+        flingBallConnections = {}
+        flingBallActive = false
+        FlingBallStatusLabel.Text = "FlingBall Status: ⚫ Inativo"
+        FlingBallButton.Text = "🟢 Ativar FlingBall"
+        FlingBallButton.BackgroundColor3 = Color3.fromRGB(255, 170, 85)
+        createNotification("⚽ FlingBall Desativado", "O FlingBall foi desativado para todos os players.", Color3.fromRGB(255, 85, 85))
     else
-        createNotification("💡 Info", "Nenhum player estava preso.", Color3.fromRGB(85, 170, 255))
+        -- Verificar se há players selecionados
+        if next(selectedPlayers) == nil then
+            createNotification("❌ Erro", "Selecione pelo menos um player antes de ativar o FlingBall.", Color3.fromRGB(255, 85, 85))
+            return
+        end
+        
+        flingBallActive = true
+        FlingBallStatusLabel.Text = "FlingBall Status: 🔴 Ativo"
+        FlingBallButton.Text = "🔴 Desativar FlingBall"
+        FlingBallButton.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
+        
+        local activatedCount = 0
+        
+        for playerName, _ in pairs(selectedPlayers) do
+            local player = Players:FindFirstChild(playerName)
+            if player and player.Character then
+                -- Criar conexão contínua de FlingBall para este player
+                local connection = RunService.Heartbeat:Connect(function()
+                    if not flingBallActive then return end
+                    pcall(function()
+                        FlingBall(player)
+                    end)
+                    wait(0.1) -- Intervalo entre execuções
+                end)
+                
+                flingBallConnections[playerName] = {
+                    connection = connection,
+                    player = player
+                }
+                activatedCount = activatedCount + 1
+            end
+        end
+        
+        if activatedCount > 0 then
+            createNotification("⚽ FlingBall Ativado", "FlingBall ativado continuamente para " .. activatedCount .. " player(s)!", Color3.fromRGB(255, 170, 85))
+        else
+            flingBallActive = false
+            FlingBallStatusLabel.Text = "FlingBall Status: ⚫ Inativo"
+            FlingBallButton.Text = "🟢 Ativar FlingBall"
+            FlingBallButton.BackgroundColor3 = Color3.fromRGB(255, 170, 85)
+            createNotification("❌ Erro", "Nenhum player válido foi encontrado para FlingBall.", Color3.fromRGB(255, 85, 85))
+        end
     end
 end
 
@@ -448,7 +467,7 @@ local function toggleBugPlayer()
             return
         end
         
-        local index = 1
+          local index = 1
         bugConnection = RunService.Stepped:Connect(function()
             if not bugPlayerActive then return end
             if #selectedPlayersList < 1 then return end
@@ -459,9 +478,9 @@ local function toggleBugPlayer()
             
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                 local crazyVector = Vector3.new(
-                    math.random(90000e199999, 90000e199999),
-                    math.random(90000e199999, 90000e199999),
-                    math.random(90000e199999, 90000e199999)
+                    math.random(1e69, 1e69),
+                    math.random(1e69, 1e69),
+                    math.random(1e69, 1e69)
                 )
                 local args = {
                     [1] = target.Character.HumanoidRootPart,
@@ -470,19 +489,19 @@ local function toggleBugPlayer()
                     [4] = target.Character.HumanoidRootPart.Position,
                     [5] = LocalPlayer.Backpack:FindFirstChild("Assault") and LocalPlayer.Backpack.Assault.GunScript_Local:FindFirstChild("MuzzleEffect"),
                     [6] = LocalPlayer.Backpack:FindFirstChild("Assault") and LocalPlayer.Backpack.Assault.GunScript_Local:FindFirstChild("HitEffect"),
-                    [7] = 90,
-                    [8] = 90,
-                    [9] = { [19900] = false },
+                    [7] = 0,
+                    [8] = 0,
+                    [9] = { [1] = false },
                     [10] = {
-                        [1] = 25990,
-                        [2] = Vector3.new(99916000, 99916000, 99916000),
-                        [3] = BrickColor.new(9991100),
-                        [4] = 0.992335,
+                        [1] = 25,
+                        [2] = Vector3.new(900, 900, 900),
+                        [3] = BrickColor.new(29),
+                        [4] = 0.25,
                         [5] = Enum.Material.SmoothPlastic,
-                        [6] = 0.29952
+                        [6] = 0.25
                     },
                     [11] = true,
-                    [19] = false
+                    [12] = false
                 }
                 Remote:FireServer(unpack(args))
             end
@@ -491,6 +510,7 @@ local function toggleBugPlayer()
         createNotification(" Bug Ativado", "Bug ativado para " .. #selectedPlayersList .. " player(s) selecionado(s).", Color3.fromRGB(85, 255, 85))
     end
 end
+
 
 -- Função para atualizar lista de players
 local function updatePlayerList()
@@ -508,12 +528,6 @@ local function updatePlayerList()
     end
     SelectedLabel.Text = "Players Selecionados: " .. selectedCount
     
-    local prisonedCount = 0
-    for _ in pairs(prisonedPlayers) do
-        prisonedCount = prisonedCount + 1
-    end
-    PrisionedLabel.Text = "Players Presos: " .. prisonedCount
-    
     -- Adicionar players à lista
     local players = Players:GetPlayers()
     local yPosition = 0
@@ -521,16 +535,13 @@ local function updatePlayerList()
     for i, player in pairs(players) do
         if player ~= LocalPlayer then
             local isSelected = selectedPlayers[player.Name] ~= nil
-            local isPrisioned = prisonedPlayers[player.Name] ~= nil
             
             local PlayerButton = Instance.new("TextButton")
             PlayerButton.Name = player.Name
             PlayerButton.Parent = PlayerScrollFrame
             
             -- Cor baseada no status
-            if isPrisioned then
-                PlayerButton.BackgroundColor3 = Color3.fromRGB(255, 170, 85) -- Laranja para presos
-            elseif isSelected then
+            if isSelected then
                 PlayerButton.BackgroundColor3 = Color3.fromRGB(85, 255, 85) -- Verde para selecionados
             else
                 PlayerButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Cinza para normais
@@ -542,14 +553,9 @@ local function updatePlayerList()
             PlayerButton.Font = Enum.Font.Gotham
             
             -- Texto baseado no status
-            local statusIcon = "⭕"
-            if isPrisioned then
-                statusIcon = "⛓️"
-            elseif isSelected then
-                statusIcon = "✅"
-            end
+            local statusIcon = isSelected and "✅" or "⭕"
             
-            PlayerButton.Text = statusIcon .. " " .. player.Name .. (isPrisioned and " (PRESO)" or "")
+            PlayerButton.Text = statusIcon .. " " .. player.Name
             PlayerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
             PlayerButton.TextScaled = true
             PlayerButton.TextXAlignment = Enum.TextXAlignment.Left
@@ -564,11 +570,6 @@ local function updatePlayerList()
             PlayerPadding.Parent = PlayerButton
             
             PlayerButton.MouseButton1Click:Connect(function()
-                if isPrisioned then
-                    createNotification("❌ Player Preso", player.Name .. " está preso e não pode ser selecionado/desmarcado.", Color3.fromRGB(255, 170, 85))
-                    return
-                end
-                
                 if selectedPlayers[player.Name] then
                     selectedPlayers[player.Name] = nil
                     createNotification("🐛 Player Desmarcado", player.Name .. " foi removido da seleção.", Color3.fromRGB(255, 170, 85))
@@ -606,18 +607,16 @@ end)
 
 BugButton.MouseButton1Click:Connect(toggleBugPlayer)
 
-PrisonButton.MouseButton1Click:Connect(prisonPlayers)
-
-FreeButton.MouseButton1Click:Connect(freeAllPlayers)
+FlingBallButton.MouseButton1Click:Connect(toggleFlingBall)
 
 CloseButton.MouseButton1Click:Connect(function()
     -- Desativar bug se estiver ativo
     if bugPlayerActive then
         toggleBugPlayer()
     end
-    -- Libertar todos os players presos
-    if prisonActive then
-        freeAllPlayers()
+    -- Desativar FlingBall se estiver ativo
+    if flingBallActive then
+        toggleFlingBall()
     end
     ScreenGui:Destroy()
 end)
@@ -637,8 +636,7 @@ end
 
 addButtonEffects(RefreshButton)
 addButtonEffects(BugButton)
-addButtonEffects(PrisonButton)
-addButtonEffects(FreeButton)
+addButtonEffects(FlingBallButton)
 addButtonEffects(CloseButton)
 
 -- Limpeza automática quando players saem do jogo
@@ -647,11 +645,12 @@ Players.PlayerRemoving:Connect(function(player)
         selectedPlayers[player.Name] = nil
     end
     
-    if prisonedPlayers[player.Name] then
-        if prisonedPlayers[player.Name].connection then
-            prisonedPlayers[player.Name].connection:Disconnect()
+    -- Remover conexão do FlingBall se existir
+    if flingBallConnections[player.Name] then
+        if flingBallConnections[player.Name].connection then
+            flingBallConnections[player.Name].connection:Disconnect()
         end
-        prisonedPlayers[player.Name] = nil
+        flingBallConnections[player.Name] = nil
     end
     
     updatePlayerList()
@@ -664,4 +663,4 @@ slideIn:Play()
 
 -- Inicializar
 updatePlayerList()
-createNotification("🐛⛓️ Sistema Carregado", "Bug Player + Prisão carregados! Selecione players e use as funções.", Color3.fromRGB(85, 170, 255))
+createNotification("🐛⚽ Sistema Carregado", "Bug Player + FlingBall carregados! Selecione players e use as funções.", Color3.fromRGB(85, 170, 255))
