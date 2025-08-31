@@ -15,7 +15,7 @@ ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Parent = ScreenGui
-MainFrame.Size = UDim2.new(0, 200, 0, 300) -- menor
+MainFrame.Size = UDim2.new(0, 200, 0, 330) -- aumentei um pouco pra caber botão de atualizar
 MainFrame.Position = UDim2.new(0.05, 0, 0.05, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 MainFrame.Active = true
@@ -24,19 +24,10 @@ MainFrame.Draggable = true
 local Title = Instance.new("TextLabel")
 Title.Parent = MainFrame
 Title.Size = UDim2.new(1,0,0,30)
-Title.Text = "Bug Player"
+Title.Text = "🐛 Bug Player"
 Title.BackgroundTransparency = 1
 Title.TextScaled = true
 Title.TextColor3 = Color3.fromRGB(255,255,255)
-
-local BugButton = Instance.new("TextButton")
-BugButton.Parent = MainFrame
-BugButton.Size = UDim2.new(1, -10, 0, 30)
-BugButton.Position = UDim2.new(0,5,0,260)
-BugButton.Text = "🟢 Ativar Bug"
-BugButton.BackgroundColor3 = Color3.fromRGB(0,255,0)
-BugButton.TextColor3 = Color3.fromRGB(0,0,0)
-BugButton.TextScaled = true
 
 local Scroll = Instance.new("ScrollingFrame")
 Scroll.Parent = MainFrame
@@ -44,10 +35,20 @@ Scroll.Size = UDim2.new(1, -10, 1, -100)
 Scroll.Position = UDim2.new(0,5,0,35)
 Scroll.BackgroundColor3 = Color3.fromRGB(40,40,40)
 Scroll.ScrollBarThickness = 5
+Scroll.CanvasSize = UDim2.new(0,0,0,0)
 
 local UIList = Instance.new("UIListLayout")
 UIList.Parent = Scroll
 UIList.Padding = UDim.new(0,3)
+UIList.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Função para atualizar altura do scroll automaticamente
+local function updateCanvas()
+    local contentSize = UIList.AbsoluteContentSize.Y
+    Scroll.CanvasSize = UDim2.new(0,0,0,contentSize + 5)
+end
+UIList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
+updateCanvas()
 
 -- Criar botão para cada player
 local function createPlayerButton(player)
@@ -68,19 +69,59 @@ local function createPlayerButton(player)
             btn.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
         end
     end)
+
+    updateCanvas()
 end
 
-for _, p in pairs(Players:GetPlayers()) do
-    if p ~= LocalPlayer then
-        createPlayerButton(p)
+-- Função para atualizar lista
+local function refreshPlayerList()
+    -- Limpar antigos
+    for _, child in pairs(Scroll:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    -- Criar botão para todos players
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            createPlayerButton(p)
+        end
     end
 end
 
+-- Criar botão de atualizar
+local RefreshButton = Instance.new("TextButton")
+RefreshButton.Parent = MainFrame
+RefreshButton.Size = UDim2.new(1, -10, 0, 30)
+RefreshButton.Position = UDim2.new(0,5,0,220)
+RefreshButton.Text = "🔄 Atualizar Lista"
+RefreshButton.BackgroundColor3 = Color3.fromRGB(0,170,255)
+RefreshButton.TextColor3 = Color3.fromRGB(0,0,0)
+RefreshButton.TextScaled = true
+
+RefreshButton.MouseButton1Click:Connect(function()
+    refreshPlayerList()
+end)
+
+-- Inicializa lista
+refreshPlayerList()
+
+-- Adicionar player automaticamente quando entrar
 Players.PlayerAdded:Connect(function(p)
     if p ~= LocalPlayer then
         createPlayerButton(p)
     end
 end)
+
+-- Botão de ativar/desativar bug
+local BugButton = Instance.new("TextButton")
+BugButton.Parent = MainFrame
+BugButton.Size = UDim2.new(1, -10, 0, 30)
+BugButton.Position = UDim2.new(0,5,0,260)
+BugButton.Text = "🟢 Ativar Bug"
+BugButton.BackgroundColor3 = Color3.fromRGB(0,255,0)
+BugButton.TextColor3 = Color3.fromRGB(0,0,0)
+BugButton.TextScaled = true
 
 -- Função bug
 local function startBug()
@@ -129,6 +170,7 @@ BugButton.MouseButton1Click:Connect(function()
         BugButton.BackgroundColor3 = Color3.fromRGB(0,255,0)
         if bugConnection then
             bugConnection:Disconnect()
+            bugConnection = nil
         end
     else
         if next(selectedPlayers) == nil then return end
